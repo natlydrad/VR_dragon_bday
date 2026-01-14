@@ -79,6 +79,48 @@
         controls.enableDamping = true; // Smooth camera movement
         controls.dampingFactor = 0.05;
         controls.update();
+        
+        // Function to save camera position to localStorage
+        function saveCameraPosition() {
+            const cameraData = {
+                position: {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z
+                },
+                target: {
+                    x: controls.target.x,
+                    y: controls.target.y,
+                    z: controls.target.z
+                }
+            };
+            localStorage.setItem('cameraPosition', JSON.stringify(cameraData));
+            console.log('Camera position saved!');
+        }
+        
+        // Function to load camera position from localStorage
+        function loadCameraPosition() {
+            const saved = localStorage.getItem('cameraPosition');
+            if (saved) {
+                try {
+                    const cameraData = JSON.parse(saved);
+                    camera.position.set(cameraData.position.x, cameraData.position.y, cameraData.position.z);
+                    controls.target.set(cameraData.target.x, cameraData.target.y, cameraData.target.z);
+                    controls.update();
+                    return true;
+                } catch (e) {
+                    console.error('Error loading camera position:', e);
+                }
+            }
+            return false;
+        }
+        
+        // Allow saving camera position with 'S' key
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'S' || event.key === 's') {
+                saveCameraPosition();
+            }
+        });
 
         // Create Galeton-inspired landscape: Big, close mountains wrapping around, Lake, and Snow
         // Create 3D mountains
@@ -289,22 +331,25 @@
                         console.log('Combined models size:', size);
                         console.log('Combined models center:', center);
                         
-                        // Calculate camera distance so models take up 1/3 of screen height
-                        const fov = camera.fov * (Math.PI / 180); // Convert to radians
-                        const modelHeight = size.y;
-                        const desiredScreenFraction = 1/3; // 1/3 of screen height
-                        const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
+                        // Try to load saved camera position first
+                        const hasSavedPosition = loadCameraPosition();
                         
-                        // Position camera at calculated distance, looking at model center
-                        // This becomes the default start position
-                        camera.position.set(center.x, center.y, center.z + distance);
-                        controls.target.copy(center);
-                        controls.update();
-                        
-                        // Save this as the default start position for future loads
-                        // (The camera position is already set above, so this is the default view)
-                        
-                        console.log('Camera positioned at distance:', distance);
+                        if (!hasSavedPosition) {
+                            // Calculate camera distance so models take up 1/3 of screen height
+                            const fov = camera.fov * (Math.PI / 180); // Convert to radians
+                            const modelHeight = size.y;
+                            const desiredScreenFraction = 1/3; // 1/3 of screen height
+                            const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
+                            
+                            // Position camera at calculated distance, looking at model center
+                            camera.position.set(center.x, center.y, center.z + distance);
+                            controls.target.copy(center);
+                            controls.update();
+                            
+                            console.log('Camera positioned at distance:', distance);
+                        } else {
+                            console.log('Loaded saved camera position');
+                        }
                         
                         // Create pixel-style text "Happy Birthday, Dragon!"
                         function createPixelText(text) {
@@ -342,7 +387,7 @@
                             return texture;
                         }
                         
-                        const textTexture = createPixelText('Happy Birthday, Dragon!');
+                        const textTexture = createPixelText("Dragon's Birthday Adventure");
                         const textMaterial = new THREE.MeshBasicMaterial({
                             map: textTexture,
                             transparent: true,
