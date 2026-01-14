@@ -125,6 +125,56 @@
                         controls.update();
                         
                         console.log('Camera positioned at distance:', distance);
+                        
+                        // Create pixel-style text "Happy Birthday, Dragon!"
+                        function createPixelText(text) {
+                            // Use low resolution for pixelated effect
+                            const scale = 4; // Scale factor for pixelation
+                            const baseWidth = 320;
+                            const baseHeight = 40;
+                            const canvas = document.createElement('canvas');
+                            canvas.width = baseWidth * scale;
+                            canvas.height = baseHeight * scale;
+                            const ctx = canvas.getContext('2d');
+                            
+                            // Disable image smoothing for pixel-perfect rendering
+                            ctx.imageSmoothingEnabled = false;
+                            
+                            // Scale up the context
+                            ctx.scale(scale, scale);
+                            
+                            // Use a small font size for pixelated look
+                            ctx.font = 'bold 16px monospace';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            
+                            // White text with black outline for visibility
+                            ctx.strokeStyle = '#000000';
+                            ctx.lineWidth = 2;
+                            ctx.strokeText(text, baseWidth / 2, baseHeight / 2);
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillText(text, baseWidth / 2, baseHeight / 2);
+                            
+                            const texture = new THREE.CanvasTexture(canvas);
+                            texture.magFilter = THREE.NearestFilter;
+                            texture.minFilter = THREE.NearestFilter;
+                            texture.needsUpdate = true;
+                            return texture;
+                        }
+                        
+                        const textTexture = createPixelText('Happy Birthday, Dragon!');
+                        const textMaterial = new THREE.MeshBasicMaterial({
+                            map: textTexture,
+                            transparent: true,
+                            alphaTest: 0.1
+                        });
+                        
+                        const textGeometry = new THREE.PlaneGeometry(2, 0.25);
+                        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+                        
+                        // Position text much closer above the models
+                        textMesh.position.set(center.x, center.y + size.y / 2 + 0.15, center.z);
+                        scene.add(textMesh);
                     }
                 },
                 (progress) => {
