@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Voxel Dog in VR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; background-color: #000; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { VOXLoader, VOXMesh } from 'three/addons/loaders/VOXLoader.js';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x505050); // Dark grey background
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Position camera to view the model (looking at origin initially)
+        camera.position.set(0, 0, 5); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // 2. Enable XR
+        renderer.xr.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Add the VR Button to the page
+        document.body.appendChild(VRButton.createButton(renderer));
+
+        // 3. Lights & Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0); // Target the origin initially
+        controls.enableDamping = true; // Smooth camera movement
+        controls.dampingFactor = 0.05;
+        controls.update();
+
+        scene.add(new THREE.HemisphereLight(0x808080, 0x606060, 3));
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.set(1, 1, 1).normalize();
+        scene.add(light);
+
+        // 4. Load "md1.vox"
+        const loader = new VOXLoader();
+        console.log('Loading voxel file...');
+        loader.load(
+            'md1.vox', 
+            (chunks) => {
+                console.log('VOX file loaded successfully! Chunks:', chunks.length);
+                const group = new THREE.Group();
+                chunks.forEach((chunk) => {
+                    const mesh = new VOXMesh(chunk);
+                    mesh.scale.setScalar(0.02); // Adjust this if the model is too big/small
+                    group.add(mesh);
+                });
+                
+                // Rotate model -90 degrees on y-axis so it faces forward
+                group.rotation.y = -Math.PI / 2;
+                
+                // Center the model at origin
+                group.position.set(0, 0, 0);
+                scene.add(group);
+                
+                // Calculate bounding box to determine model size
+                const box = new THREE.Box3().setFromObject(group);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                
+                console.log('Model size:', size);
+                console.log('Model center:', center);
+                
+                // Calculate camera distance so model takes up 1/3 of screen height
+                const fov = camera.fov * (Math.PI / 180); // Convert to radians
+                const modelHeight = size.y;
+                const desiredScreenFraction = 1/3; // 1/3 of screen height
+                const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
+                
+                // Position camera at calculated distance, looking at model center
+                camera.position.set(center.x, center.y, center.z + distance);
+                controls.target.copy(center);
+                controls.update();
+                
+                console.log('Camera positioned at distance:', distance);
+            },
+            (progress) => {
+                console.log('Loading progress:', progress);
+            },
+            (error) => {
+                console.error('Error loading VOX file:', error);
+                alert('Error loading md1.vox file. Please check:\n1. The file exists in the same folder\n2. You are running a local server (not opening file:// directly)\n3. Check the browser console for details');
+            }
+        );
+
+        // 5. Render Loop (works for both desktop and VR)
+        renderer.setAnimationLoop(function () {
+            controls.update(); // Update controls on each frame
+            renderer.render(scene, camera);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
