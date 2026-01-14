@@ -81,32 +81,16 @@
         controls.update();
 
         // Create Galeton-inspired landscape: Big, close mountains wrapping around, Lake, and Snow
-        // Create 3D mountains with snow caps
+        // Create 3D mountains
         function createMountain(baseWidth, height, x, z, color = 0x5a5a4a) {
-            const mountainGroup = new THREE.Group();
-            
-            // Mountain base (color varies by distance)
-            const baseGeometry = new THREE.ConeGeometry(baseWidth, height, 8);
-            const baseMaterial = new THREE.MeshLambertMaterial({ 
+            const geometry = new THREE.ConeGeometry(baseWidth, height, 8);
+            const material = new THREE.MeshLambertMaterial({ 
                 color: color,
                 flatShading: true
             });
-            const base = new THREE.Mesh(baseGeometry, baseMaterial);
-            
-            // Snow cap on top (white)
-            const snowHeight = height * 0.25; // Snow covers top 25% of mountain
-            const snowGeometry = new THREE.ConeGeometry(baseWidth * 0.6, snowHeight, 8);
-            const snowMaterial = new THREE.MeshLambertMaterial({ 
-                color: 0xFFFFFF, // White snow
-                flatShading: true
-            });
-            const snowCap = new THREE.Mesh(snowGeometry, snowMaterial);
-            snowCap.position.y = height * 0.6; // Position snow cap on upper part
-            
-            mountainGroup.add(base);
-            mountainGroup.add(snowCap);
-            mountainGroup.position.set(x, height / 2, z);
-            return mountainGroup;
+            const mountain = new THREE.Mesh(geometry, material);
+            mountain.position.set(x, height / 2, z);
+            return mountain;
         }
         
         // Create fewer, bigger mountains - nestled but not too close
@@ -177,14 +161,22 @@
         iceGroup.add(createIcePatch(1.1, 8.5, -5));
         scene.add(iceGroup);
         
-        // Snow patches on the ground (away from lake)
+        // Snow patches on the ground (away from lake) - make them look like actual snow
         function createSnowPatch(size, x, z) {
-            const snowGeometry = new THREE.CircleGeometry(size, 16);
-            const snowMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+            const snowGroup = new THREE.Group();
+            
+            // Snow base (slightly elevated to sit on ground)
+            const snowGeometry = new THREE.CylinderGeometry(size, size, 0.1, 16);
+            const snowMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xF8F8FF, // Bright white with slight blue tint for snow
+                emissive: 0x222222 // Slight glow to make it stand out
+            });
             const snow = new THREE.Mesh(snowGeometry, snowMaterial);
-            snow.rotation.x = -Math.PI / 2;
-            snow.position.set(x, -0.48, z);
-            return snow;
+            snow.rotation.x = Math.PI / 2;
+            snow.position.set(x, -0.45, z);
+            snowGroup.add(snow);
+            
+            return snowGroup;
         }
         
         const snowGroup = new THREE.Group();
