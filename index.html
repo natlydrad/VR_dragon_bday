@@ -80,8 +80,8 @@
         controls.dampingFactor = 0.05;
         controls.update();
 
-        // Create Galeton-inspired landscape: Mountains and Water
-        // Mountains in the background
+        // Create Galeton-inspired landscape: 3D Mountains, Water, and Snow
+        // Create 3D mountains with depth (not flat)
         function createMountain(baseWidth, height, x, z) {
             const geometry = new THREE.ConeGeometry(baseWidth, height, 8);
             const material = new THREE.MeshLambertMaterial({ 
@@ -90,19 +90,28 @@
             });
             const mountain = new THREE.Mesh(geometry, material);
             mountain.position.set(x, height / 2, z);
+            // Add some rotation variation for more natural look
+            mountain.rotation.y = (Math.random() - 0.5) * 0.3;
             return mountain;
         }
         
-        // Add multiple mountains in the background
+        // Add multiple 3D mountains in the background at different depths
         const mountains = new THREE.Group();
-        mountains.add(createMountain(8, 3, -12, -15));
-        mountains.add(createMountain(6, 2.5, -6, -18));
-        mountains.add(createMountain(7, 2.8, 0, -20));
-        mountains.add(createMountain(6, 2.3, 8, -17));
-        mountains.add(createMountain(5, 2, 14, -16));
+        // Far mountains (smaller, further back)
+        mountains.add(createMountain(6, 2.5, -12, -22));
+        mountains.add(createMountain(5, 2.2, -4, -25));
+        mountains.add(createMountain(5.5, 2.3, 4, -24));
+        mountains.add(createMountain(4.5, 2, 12, -23));
+        // Mid-range mountains
+        mountains.add(createMountain(7, 3, -10, -15));
+        mountains.add(createMountain(6.5, 2.8, 2, -18));
+        mountains.add(createMountain(6, 2.6, 10, -16));
+        // Closer mountains
+        mountains.add(createMountain(5, 2.2, -8, -12));
+        mountains.add(createMountain(4.5, 2, 8, -11));
         scene.add(mountains);
         
-        // Water/Ground plane
+        // Water plane
         const waterGeometry = new THREE.PlaneGeometry(100, 100);
         const waterMaterial = new THREE.MeshLambertMaterial({ 
             color: 0x4a7fa8, // Water blue
@@ -114,7 +123,25 @@
         water.position.y = -0.5;
         scene.add(water);
         
-        // Ground/grass around water
+        // Snow patches on the ground
+        function createSnowPatch(size, x, z) {
+            const snowGeometry = new THREE.CircleGeometry(size, 16);
+            const snowMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+            const snow = new THREE.Mesh(snowGeometry, snowMaterial);
+            snow.rotation.x = -Math.PI / 2;
+            snow.position.set(x, -0.48, z);
+            return snow;
+        }
+        
+        const snowGroup = new THREE.Group();
+        snowGroup.add(createSnowPatch(3, -8, -5));
+        snowGroup.add(createSnowPatch(2.5, 6, -7));
+        snowGroup.add(createSnowPatch(2, -4, 3));
+        snowGroup.add(createSnowPatch(1.5, 8, 2));
+        snowGroup.add(createSnowPatch(2.2, 0, -8));
+        scene.add(snowGroup);
+        
+        // Ground/grass
         const groundGeometry = new THREE.PlaneGeometry(100, 100);
         const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x6b8e5a }); // Green grass
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
