@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Voxel Dog in VR</title>
+    <title>Voxel Models in VR</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background-color: #000; font-family: sans-serif; }
@@ -53,56 +53,93 @@
         light.position.set(1, 1, 1).normalize();
         scene.add(light);
 
-        // 4. Load "md1.vox"
+        // 4. Load both models
         const loader = new VOXLoader();
-        console.log('Loading voxel file...');
-        loader.load(
-            'md1.vox', 
-            (chunks) => {
-                console.log('VOX file loaded successfully! Chunks:', chunks.length);
-                const group = new THREE.Group();
-                chunks.forEach((chunk) => {
-                    const mesh = new VOXMesh(chunk);
-                    mesh.scale.setScalar(0.02); // Adjust this if the model is too big/small
-                    group.add(mesh);
-                });
-                
-                // Rotate model -90 degrees on y-axis so it faces forward
-                group.rotation.y = -Math.PI / 2;
-                
-                // Center the model at origin
-                group.position.set(0, 0, 0);
-                scene.add(group);
-                
-                // Calculate bounding box to determine model size
-                const box = new THREE.Box3().setFromObject(group);
-                const size = box.getSize(new THREE.Vector3());
-                const center = box.getCenter(new THREE.Vector3());
-                
-                console.log('Model size:', size);
-                console.log('Model center:', center);
-                
-                // Calculate camera distance so model takes up 1/3 of screen height
-                const fov = camera.fov * (Math.PI / 180); // Convert to radians
-                const modelHeight = size.y;
-                const desiredScreenFraction = 1/3; // 1/3 of screen height
-                const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
-                
-                // Position camera at calculated distance, looking at model center
-                camera.position.set(center.x, center.y, center.z + distance);
-                controls.target.copy(center);
-                controls.update();
-                
-                console.log('Camera positioned at distance:', distance);
-            },
-            (progress) => {
-                console.log('Loading progress:', progress);
-            },
-            (error) => {
-                console.error('Error loading VOX file:', error);
-                alert('Error loading md1.vox file. Please check:\n1. The file exists in the same folder\n2. You are running a local server (not opening file:// directly)\n3. Check the browser console for details');
-            }
-        );
+        const allModelsGroup = new THREE.Group();
+        const modelGroups = [];
+        let modelsLoaded = 0;
+        const totalModels = 2;
+        
+        function loadModel(filename, index) {
+            console.log('Loading voxel file:', filename);
+            loader.load(
+                filename,
+                (chunks) => {
+                    console.log('VOX file loaded successfully!', filename, 'Chunks:', chunks.length);
+                    const group = new THREE.Group();
+                    chunks.forEach((chunk) => {
+                        const mesh = new VOXMesh(chunk);
+                        mesh.scale.setScalar(0.02); // Adjust this if the model is too big/small
+                        group.add(mesh);
+                    });
+                    
+                    modelGroups[index] = group;
+                    modelsLoaded++;
+                    
+                    if (modelsLoaded === totalModels) {
+                        // Both models loaded, calculate bounding boxes to determine spacing
+                        const box0 = new THREE.Box3().setFromObject(modelGroups[0]);
+                        const box1 = new THREE.Box3().setFromObject(modelGroups[1]);
+                        const size0 = box0.getSize(new THREE.Vector3());
+                        const size1 = box1.getSize(new THREE.Vector3());
+                        
+                        // Tilt models slightly towards each other (cute!)
+                        modelGroups[0].rotation.y = Math.PI / 12; // Left model tilts right (15 degrees)
+                        modelGroups[1].rotation.y = -Math.PI / 12; // Right model tilts left (-15 degrees)
+                        
+                        // Recalculate bounding boxes after rotation
+                        box0.setFromObject(modelGroups[0]);
+                        box1.setFromObject(modelGroups[1]);
+                        const size0Rotated = box0.getSize(new THREE.Vector3());
+                        const size1Rotated = box1.getSize(new THREE.Vector3());
+                        
+                        // Position models side by side so they're touching
+                        // drag_gale (left) and nat_gale (right)
+                        const w0 = size0Rotated.x; // width of drag_gale (x dimension)
+                        const w1 = size1Rotated.x; // width of nat_gale (x dimension)
+                        modelGroups[0].position.set(-w1 / 2, 0, 0);
+                        modelGroups[1].position.set(w0 / 2, 0, 0);
+                        
+                        // Add both models to the group
+                        allModelsGroup.add(modelGroups[0]);
+                        allModelsGroup.add(modelGroups[1]);
+                        scene.add(allModelsGroup);
+                        
+                        // Calculate bounding box for both models combined
+                        const box = new THREE.Box3().setFromObject(allModelsGroup);
+                        const size = box.getSize(new THREE.Vector3());
+                        const center = box.getCenter(new THREE.Vector3());
+                        
+                        console.log('Combined models size:', size);
+                        console.log('Combined models center:', center);
+                        
+                        // Calculate camera distance so models take up 1/3 of screen height
+                        const fov = camera.fov * (Math.PI / 180); // Convert to radians
+                        const modelHeight = size.y;
+                        const desiredScreenFraction = 1/3; // 1/3 of screen height
+                        const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
+                        
+                        // Position camera at calculated distance, looking at model center
+                        camera.position.set(center.x, center.y, center.z + distance);
+                        controls.target.copy(center);
+                        controls.update();
+                        
+                        console.log('Camera positioned at distance:', distance);
+                    }
+                },
+                (progress) => {
+                    console.log('Loading progress:', filename, progress);
+                },
+                (error) => {
+                    console.error('Error loading VOX file:', filename, error);
+                    alert(`Error loading ${filename} file. Please check:\n1. The file exists in the same folder\n2. You are running a local server (not opening file:// directly)\n3. Check the browser console for details`);
+                }
+            );
+        }
+        
+        // Load drag_gale (index 0) and nat_gale (index 1)
+        loadModel('drag_gale_0.vox', 0); // Left side
+        loadModel('nat_gale_1.vox', 1);  // Right side
 
         // 5. Render Loop (works for both desktop and VR)
         renderer.setAnimationLoop(function () {
