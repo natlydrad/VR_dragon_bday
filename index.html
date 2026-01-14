@@ -196,6 +196,30 @@
         sunLight.castShadow = false;
         scene.add(sunLight);
 
+        // Create falling snow
+        const snowCount = 1000;
+        const snowGeometry = new THREE.BufferGeometry();
+        const snowPositions = new Float32Array(snowCount * 3);
+        
+        // Initialize snow positions randomly
+        for (let i = 0; i < snowCount * 3; i += 3) {
+            snowPositions[i] = (Math.random() - 0.5) * 50; // x
+            snowPositions[i + 1] = Math.random() * 30 + 5; // y (start above)
+            snowPositions[i + 2] = (Math.random() - 0.5) * 50; // z
+        }
+        
+        snowGeometry.setAttribute('position', new THREE.BufferAttribute(snowPositions, 3));
+        
+        const snowMaterial = new THREE.PointsMaterial({
+            color: 0xFFFFFF,
+            size: 0.1,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const snow = new THREE.Points(snowGeometry, snowMaterial);
+        scene.add(snow);
+
         // 4. Load both models
         const loader = new VOXLoader();
         const allModelsGroup = new THREE.Group();
@@ -337,6 +361,24 @@
         // 5. Render Loop (works for both desktop and VR)
         renderer.setAnimationLoop(function () {
             controls.update(); // Update controls on each frame
+            
+            // Animate falling snow
+            const positions = snowGeometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 0.02; // Fall down
+                
+                // Add slight horizontal drift
+                positions[i - 1] += Math.sin(positions[i] * 0.1) * 0.005;
+                
+                // Reset when snow falls below ground
+                if (positions[i] < -5) {
+                    positions[i] = 30; // Reset to top
+                    positions[i - 1] = (Math.random() - 0.5) * 50; // Random x
+                    positions[i + 1] = (Math.random() - 0.5) * 50; // Random z
+                }
+            }
+            snowGeometry.attributes.position.needsUpdate = true;
+            
             renderer.render(scene, camera);
         });
 
