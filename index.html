@@ -80,17 +80,33 @@
         controls.dampingFactor = 0.05;
         controls.update();
 
-        // Create Galeton-inspired landscape: Big, close mountains wrapping around, Water, and Snow
-        // Create 3D mountains with varying elevations
+        // Create Galeton-inspired landscape: Big, close mountains wrapping around, Lake, and Snow
+        // Create 3D mountains with snow caps
         function createMountain(baseWidth, height, x, z) {
-            const geometry = new THREE.ConeGeometry(baseWidth, height, 8);
-            const material = new THREE.MeshLambertMaterial({ 
+            const mountainGroup = new THREE.Group();
+            
+            // Mountain base (gray-green)
+            const baseGeometry = new THREE.ConeGeometry(baseWidth, height, 8);
+            const baseMaterial = new THREE.MeshLambertMaterial({ 
                 color: 0x5a5a4a, // Mountain gray-green
                 flatShading: true
             });
-            const mountain = new THREE.Mesh(geometry, material);
-            mountain.position.set(x, height / 2, z);
-            return mountain;
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            
+            // Snow cap on top (white)
+            const snowHeight = height * 0.25; // Snow covers top 25% of mountain
+            const snowGeometry = new THREE.ConeGeometry(baseWidth * 0.6, snowHeight, 8);
+            const snowMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xFFFFFF, // White snow
+                flatShading: true
+            });
+            const snowCap = new THREE.Mesh(snowGeometry, snowMaterial);
+            snowCap.position.y = height * 0.6; // Position snow cap on upper part
+            
+            mountainGroup.add(base);
+            mountainGroup.add(snowCap);
+            mountainGroup.position.set(x, height / 2, z);
+            return mountainGroup;
         }
         
         // Create fewer, bigger mountains - nestled but not too close
@@ -112,19 +128,53 @@
         
         scene.add(mountains);
         
-        // Water plane
-        const waterGeometry = new THREE.PlaneGeometry(100, 100);
-        const waterMaterial = new THREE.MeshLambertMaterial({ 
+        // Ground/grass base
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x7a9a8a }); // Lighter, more wintery
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.49;
+        scene.add(ground);
+        
+        // Lake (circular body of water)
+        const lakeRadius = 8;
+        const lakeGeometry = new THREE.CircleGeometry(lakeRadius, 32);
+        const lakeMaterial = new THREE.MeshLambertMaterial({ 
             color: 0x4a7fa8, // Water blue
             transparent: true,
             opacity: 0.8
         });
-        const water = new THREE.Mesh(waterGeometry, waterMaterial);
-        water.rotation.x = -Math.PI / 2;
-        water.position.y = -0.5;
-        scene.add(water);
+        const lake = new THREE.Mesh(lakeGeometry, lakeMaterial);
+        lake.rotation.x = -Math.PI / 2;
+        lake.position.set(0, -0.48, -4); // Position lake in front
+        scene.add(lake);
         
-        // Snow patches on the ground (more snow!)
+        // Ice patches around the lake
+        function createIcePatch(size, x, z) {
+            const iceGeometry = new THREE.CircleGeometry(size, 16);
+            const iceMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xE0F6FF, // Light blue-white ice
+                transparent: true,
+                opacity: 0.7
+            });
+            const ice = new THREE.Mesh(iceGeometry, iceMaterial);
+            ice.rotation.x = -Math.PI / 2;
+            ice.position.set(x, -0.47, z);
+            return ice;
+        }
+        
+        const iceGroup = new THREE.Group();
+        // Ice patches around the lake edge
+        iceGroup.add(createIcePatch(2.5, -6, -4));
+        iceGroup.add(createIcePatch(2, 6, -3));
+        iceGroup.add(createIcePatch(2.2, -4, -1));
+        iceGroup.add(createIcePatch(1.8, 5, -2));
+        iceGroup.add(createIcePatch(2, 0, -6));
+        iceGroup.add(createIcePatch(1.5, -7, -6));
+        iceGroup.add(createIcePatch(1.8, 7, -5));
+        scene.add(iceGroup);
+        
+        // Snow patches on the ground (away from lake)
         function createSnowPatch(size, x, z) {
             const snowGeometry = new THREE.CircleGeometry(size, 16);
             const snowMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
@@ -135,25 +185,14 @@
         }
         
         const snowGroup = new THREE.Group();
-        // More snow patches scattered around
-        snowGroup.add(createSnowPatch(4, -10, -6));
-        snowGroup.add(createSnowPatch(3.5, 8, -8));
-        snowGroup.add(createSnowPatch(3, -6, 4));
-        snowGroup.add(createSnowPatch(2.8, 10, 3));
-        snowGroup.add(createSnowPatch(3.2, -2, -9));
-        snowGroup.add(createSnowPatch(2.5, 4, 5));
-        snowGroup.add(createSnowPatch(2.8, -8, 2));
-        snowGroup.add(createSnowPatch(3, 6, -4));
-        snowGroup.add(createSnowPatch(2.5, 0, 8));
+        // Snow patches scattered around (not on the lake)
+        snowGroup.add(createSnowPatch(3, -10, -8));
+        snowGroup.add(createSnowPatch(2.5, 8, -10));
+        snowGroup.add(createSnowPatch(2.8, -6, 2));
+        snowGroup.add(createSnowPatch(2.2, 10, 4));
+        snowGroup.add(createSnowPatch(2.5, 0, 6));
+        snowGroup.add(createSnowPatch(2, -8, 4));
         scene.add(snowGroup);
-        
-        // Ground with more snow coverage (lighter base to show more snow)
-        const groundGeometry = new THREE.PlaneGeometry(100, 100);
-        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x7a9a8a }); // Lighter, more wintery
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -0.49;
-        scene.add(ground);
         
         // Natural lighting for Galeton scene
         scene.add(new THREE.HemisphereLight(0x87CEEB, 0x6b8e5a, 1.2)); // Sky and ground colors
