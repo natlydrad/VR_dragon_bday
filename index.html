@@ -59,8 +59,8 @@
         scene.add(sky);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // Position camera to view the model (looking at origin initially)
-        camera.position.set(0, 0, 5); 
+        // Default camera position - will be updated when models load, but this is the fallback
+        camera.position.set(0, 1.5, 5); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -189,12 +189,21 @@
         snowGroup.add(createSnowPatch(2, -8, 4));
         scene.add(snowGroup);
         
-        // Natural lighting for Galeton scene
-        scene.add(new THREE.HemisphereLight(0x87CEEB, 0x6b8e5a, 1.2)); // Sky and ground colors
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        sunLight.position.set(5, 10, 5);
+        // Studio Ghibli-inspired lighting - warm, soft, and bright
+        scene.add(new THREE.HemisphereLight(0xFFF8E7, 0xE8F5E9, 1.5)); // Warm sky, soft ground (brighter)
+        const sunLight = new THREE.DirectionalLight(0xFFF8DC, 2.0); // Warm golden light (warmer, brighter)
+        sunLight.position.set(3, 8, 4);
         sunLight.castShadow = false;
         scene.add(sunLight);
+        
+        // Add warm point light near characters for Studio Ghibli glow
+        const characterLight = new THREE.PointLight(0xFFF8DC, 2.5, 15); // Warm golden point light
+        characterLight.position.set(0, 2, 3);
+        scene.add(characterLight);
+        
+        // Additional ambient light for overall brightness
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.8);
+        scene.add(ambientLight);
 
         // Create falling snow
         const snowCount = 1000;
@@ -287,9 +296,13 @@
                         const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
                         
                         // Position camera at calculated distance, looking at model center
+                        // This becomes the default start position
                         camera.position.set(center.x, center.y, center.z + distance);
                         controls.target.copy(center);
                         controls.update();
+                        
+                        // Save this as the default start position for future loads
+                        // (The camera position is already set above, so this is the default view)
                         
                         console.log('Camera positioned at distance:', distance);
                         
