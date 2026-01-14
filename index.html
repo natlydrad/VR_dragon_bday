@@ -24,7 +24,39 @@
 
         // 1. Scene Setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x505050); // Dark grey background
+        
+        // Create sky gradient background (Galeton-inspired: blue sky)
+        const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+        const skyMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                topColor: { value: new THREE.Color(0x87CEEB) }, // Sky blue
+                bottomColor: { value: new THREE.Color(0xE0F6FF) }, // Light blue
+                offset: { value: 0.3 },
+                exponent: { value: 0.6 }
+            },
+            vertexShader: `
+                varying vec3 vWorldPosition;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 topColor;
+                uniform vec3 bottomColor;
+                uniform float offset;
+                uniform float exponent;
+                varying vec3 vWorldPosition;
+                void main() {
+                    float h = normalize(vWorldPosition + offset).y;
+                    gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                }
+            `,
+            side: THREE.BackSide
+        });
+        const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(sky);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         // Position camera to view the model (looking at origin initially)
@@ -48,10 +80,54 @@
         controls.dampingFactor = 0.05;
         controls.update();
 
-        scene.add(new THREE.HemisphereLight(0x808080, 0x606060, 3));
-        const light = new THREE.DirectionalLight(0xffffff, 2);
-        light.position.set(1, 1, 1).normalize();
-        scene.add(light);
+        // Create Galeton-inspired landscape: Mountains and Water
+        // Mountains in the background
+        function createMountain(baseWidth, height, x, z) {
+            const geometry = new THREE.ConeGeometry(baseWidth, height, 8);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0x5a5a4a, // Mountain gray-green
+                flatShading: true
+            });
+            const mountain = new THREE.Mesh(geometry, material);
+            mountain.position.set(x, height / 2, z);
+            return mountain;
+        }
+        
+        // Add multiple mountains in the background
+        const mountains = new THREE.Group();
+        mountains.add(createMountain(8, 3, -12, -15));
+        mountains.add(createMountain(6, 2.5, -6, -18));
+        mountains.add(createMountain(7, 2.8, 0, -20));
+        mountains.add(createMountain(6, 2.3, 8, -17));
+        mountains.add(createMountain(5, 2, 14, -16));
+        scene.add(mountains);
+        
+        // Water/Ground plane
+        const waterGeometry = new THREE.PlaneGeometry(100, 100);
+        const waterMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0x4a7fa8, // Water blue
+            transparent: true,
+            opacity: 0.8
+        });
+        const water = new THREE.Mesh(waterGeometry, waterMaterial);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = -0.5;
+        scene.add(water);
+        
+        // Ground/grass around water
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x6b8e5a }); // Green grass
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.49;
+        scene.add(ground);
+        
+        // Natural lighting for Galeton scene
+        scene.add(new THREE.HemisphereLight(0x87CEEB, 0x6b8e5a, 1.2)); // Sky and ground colors
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        sunLight.position.set(5, 10, 5);
+        sunLight.castShadow = false;
+        scene.add(sunLight);
 
         // 4. Load both models
         const loader = new VOXLoader();
