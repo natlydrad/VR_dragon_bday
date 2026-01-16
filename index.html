@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background-color: #000; font-family: sans-serif; }
+        #startButton {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #4CAF50;
+            color: white;
+            border: 3px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: monospace;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        #startButton:hover {
+            background-color: #45a049;
+            transform: translateX(-50%) scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -21,6 +42,13 @@
         import { VOXLoader, VOXMesh } from 'three/addons/loaders/VOXLoader.js';
         import { VRButton } from 'three/addons/webxr/VRButton.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Clear old camera position from game view (one-time)
+        if (localStorage.getItem('cameraPosition')) {
+            localStorage.removeItem('cameraPosition');
+            console.log('Cleared old camera position');
+        }
+        // Title camera position will be loaded if saved (press 'S' to save current view as default)
 
         // 1. Scene Setup
         const scene = new THREE.Scene();
@@ -94,13 +122,13 @@
                     z: controls.target.z
                 }
             };
-            localStorage.setItem('cameraPosition', JSON.stringify(cameraData));
+            localStorage.setItem('titleCameraPosition', JSON.stringify(cameraData));
             console.log('Camera position saved!');
         }
         
-        // Function to load camera position from localStorage
+        // Function to load camera position from localStorage (only for title screen)
         function loadCameraPosition() {
-            const saved = localStorage.getItem('cameraPosition');
+            const saved = localStorage.getItem('titleCameraPosition');
             if (saved) {
                 try {
                     const cameraData = JSON.parse(saved);
@@ -331,7 +359,7 @@
                         console.log('Combined models size:', size);
                         console.log('Combined models center:', center);
                         
-                        // Try to load saved camera position first
+                        // Try to load saved camera position first, otherwise use default
                         const hasSavedPosition = loadCameraPosition();
                         
                         if (!hasSavedPosition) {
@@ -400,6 +428,15 @@
                         // Position text much closer above the models
                         textMesh.position.set(center.x, center.y + size.y / 2 + 0.15, center.z);
                         scene.add(textMesh);
+                        
+                        // Add start button (title screen)
+                        const startButton = document.createElement('button');
+                        startButton.id = 'startButton';
+                        startButton.textContent = 'START';
+                        startButton.onclick = () => {
+                            window.location.href = 'game.html';
+                        };
+                        document.body.appendChild(startButton);
                     }
                 },
                 (progress) => {
