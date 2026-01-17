@@ -388,13 +388,17 @@
                         controls.minDistance = defaultDistance * 0.75; // Can zoom in to 75% of default
                         controls.maxDistance = defaultDistance * 1.4; // Can zoom out to 140% of default
                         
-                        // Tight vertical rotation limits (polar angle) - very limited up/down movement
+                        // Very tight vertical rotation limits (polar angle) - minimal up/down movement
                         const defaultPolarAngle = Math.PI / 2; // Horizontal viewing angle (90° from top)
-                        controls.minPolarAngle = defaultPolarAngle - Math.PI / 12; // 75° from top (15° above horizontal)
-                        controls.maxPolarAngle = defaultPolarAngle + Math.PI / 12; // 105° from top (15° below horizontal)
+                        controls.minPolarAngle = defaultPolarAngle - (5 * Math.PI / 180); // 85° from top (5° above horizontal)
+                        controls.maxPolarAngle = defaultPolarAngle + (5 * Math.PI / 180); // 95° from top (5° below horizontal)
                         
-                        // Don't restrict horizontal rotation - allows full left/right movement
-                        // Distance and vertical limits will prevent seeing ugly stuff
+                        // Restrict horizontal rotation (azimuth angle) - limited left/right movement  
+                        // Use a fixed center azimuth of 0 (looking down -Z axis) with ±30° range
+                        // This ensures camera starts in front and can wiggle left/right
+                        const azimuthRange = Math.PI / 6; // ±30 degrees (60° total range)
+                        controls.minAzimuthAngle = -azimuthRange; // 30° to the left
+                        controls.maxAzimuthAngle = azimuthRange;  // 30° to the right
                         
                         // Create pixel-style text "Happy Birthday, Dragon!"
                         function createPixelText(text) {
