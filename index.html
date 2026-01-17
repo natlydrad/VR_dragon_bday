@@ -362,22 +362,39 @@
                         // Try to load saved camera position first, otherwise use default
                         const hasSavedPosition = loadCameraPosition();
                         
+                        let defaultDistance;
                         if (!hasSavedPosition) {
                             // Calculate camera distance so models take up 1/3 of screen height
                             const fov = camera.fov * (Math.PI / 180); // Convert to radians
                             const modelHeight = size.y;
                             const desiredScreenFraction = 1/3; // 1/3 of screen height
-                            const distance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
+                            defaultDistance = (modelHeight / 2) / Math.tan(fov / 2) / desiredScreenFraction;
                             
                             // Position camera at calculated distance, looking at model center
-                            camera.position.set(center.x, center.y, center.z + distance);
+                            camera.position.set(center.x, center.y, center.z + defaultDistance);
                             controls.target.copy(center);
                             controls.update();
                             
-                            console.log('Camera positioned at distance:', distance);
+                            console.log('Camera positioned at distance:', defaultDistance);
                         } else {
+                            // Calculate distance from saved position to get limits
+                            const savedPosition = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
+                            defaultDistance = savedPosition.distanceTo(controls.target);
                             console.log('Loaded saved camera position');
                         }
+                        
+                        // Set limits on OrbitControls to prevent seeing ugly stuff
+                        // Allow some wiggle room but not too much
+                        controls.minDistance = defaultDistance * 0.75; // Can zoom in to 75% of default
+                        controls.maxDistance = defaultDistance * 1.4; // Can zoom out to 140% of default
+                        
+                        // Tight vertical rotation limits (polar angle) - very limited up/down movement
+                        const defaultPolarAngle = Math.PI / 2; // Horizontal viewing angle (90° from top)
+                        controls.minPolarAngle = defaultPolarAngle - Math.PI / 12; // 75° from top (15° above horizontal)
+                        controls.maxPolarAngle = defaultPolarAngle + Math.PI / 12; // 105° from top (15° below horizontal)
+                        
+                        // Don't restrict horizontal rotation - allows full left/right movement
+                        // Distance and vertical limits will prevent seeing ugly stuff
                         
                         // Create pixel-style text "Happy Birthday, Dragon!"
                         function createPixelText(text) {
