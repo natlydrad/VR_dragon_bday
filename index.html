@@ -159,7 +159,10 @@
                 flatShading: true
             });
             const mountain = new THREE.Mesh(geometry, material);
-            mountain.position.set(x, height / 2, z);
+            // Position so the base of the mountain (bottom of cone) touches the ground at y = -0.49
+            // ConeGeometry center is at height/2 from the base, so position at ground level + height/2
+            const groundLevel = -0.49;
+            mountain.position.set(x, groundLevel + height / 2, z);
             return mountain;
         }
         
