@@ -120,7 +120,9 @@
             const minY = box.min.y;
             
             // Position character so its bottom sits on the ground (y=0)
-            group.position.set(0, -minY, 0);
+            // Position character slightly to the left to make room for text bubble
+            const characterOffsetX = -1; // Move character slightly left
+            group.position.set(characterOffsetX, -minY, 0);
             scene.add(group);
             
             // Recalculate center after positioning
@@ -151,16 +153,16 @@
                 canvas.height = 256;
                 const ctx = canvas.getContext('2d');
                 
-                // Draw speech bubble background (white rounded rectangle)
+                // Draw speech bubble background (white rounded rectangle, no triangle)
                 ctx.fillStyle = '#FFFFFF';
                 ctx.strokeStyle = '#000000';
                 ctx.lineWidth = 4;
                 
-                // Draw rounded rectangle
+                // Draw rounded rectangle (no tail needed)
                 const x = 20;
                 const y = 20;
                 const width = canvas.width - 40;
-                const height = canvas.height - 60; // Leave room for tail
+                const height = canvas.height - 40;
                 const radius = 20;
                 ctx.beginPath();
                 ctx.moveTo(x + radius, y);
@@ -176,23 +178,12 @@
                 ctx.fill();
                 ctx.stroke();
                 
-                // Draw tail pointing down
-                const tailX = canvas.width / 2;
-                const tailY = y + height;
-                ctx.beginPath();
-                ctx.moveTo(tailX - 25, tailY);
-                ctx.lineTo(tailX, tailY + 30);
-                ctx.lineTo(tailX + 25, tailY);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-                
                 // Draw text
                 ctx.fillStyle = '#000000';
                 ctx.font = 'bold 28px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(text, canvas.width / 2, canvas.height / 2 - 15);
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
                 
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.needsUpdate = true;
@@ -207,8 +198,11 @@
             });
             const bubbleGeometry = new THREE.PlaneGeometry(2, 1);
             const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
-            // Position bubble lower, above the character's head
-            bubble.position.set(newCenter.x, newCenter.y + size.y * 0.6 + 0.5, newCenter.z);
+            // Position bubble to the right of the character, close together, at character's head height
+            // Calculate position based on character's right side
+            const bubbleOffsetX = characterOffsetX + size.x / 2 + 1; // Right side of character + spacing
+            bubble.position.set(bubbleOffsetX, newCenter.y + size.y * 0.6, newCenter.z);
+            // Don't rotate - let it face forward naturally (PlaneGeometry faces +Z by default)
             scene.add(bubble);
         });
 
