@@ -26,136 +26,9 @@
             background-color: #45a049;
             transform: translateX(-50%) scale(1.05);
         }
-        #controlPanel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 300px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid white;
-            border-radius: 10px;
-            padding: 15px;
-            color: white;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 200;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        #controlPanel h3 {
-            margin: 0 0 15px 0;
-            text-align: center;
-            color: #4CAF50;
-        }
-        .control-group {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
-        .control-group:last-child {
-            border-bottom: none;
-        }
-        .control-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .control-label label {
-            flex: 1;
-        }
-        .lock-toggle {
-            background: #444;
-            border: 1px solid #666;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-        }
-        .lock-toggle.locked {
-            background: #4CAF50;
-        }
-        .control-input {
-            width: 100%;
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-        .control-input input[type="number"] {
-            flex: 1;
-            background: #222;
-            border: 1px solid #555;
-            color: white;
-            padding: 5px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 11px;
-        }
-        .control-input input[type="range"] {
-            flex: 2;
-        }
-        #saveLimitsBtn {
-            width: 100%;
-            padding: 10px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #saveLimitsBtn:hover {
-            background: #45a049;
-        }
     </style>
 </head>
 <body>
-    <div id="controlPanel">
-        <h3>Camera Limits Control</h3>
-        <div class="control-group">
-            <div class="control-label">
-                <label>Min Distance (zoom in):</label>
-                <button class="lock-toggle" id="lockMinDist">🔒</button>
-            </div>
-            <div class="control-input">
-                <input type="range" id="minDistRange" min="0.5" max="1.0" step="0.05" value="0.75">
-                <input type="number" id="minDistInput" step="0.05" value="0.75">
-            </div>
-        </div>
-        <div class="control-group">
-            <div class="control-label">
-                <label>Max Distance (zoom out):</label>
-                <button class="lock-toggle" id="lockMaxDist">🔒</button>
-            </div>
-            <div class="control-input">
-                <input type="range" id="maxDistRange" min="1.0" max="2.0" step="0.05" value="1.4">
-                <input type="number" id="maxDistInput" step="0.05" value="1.4">
-            </div>
-        </div>
-        <div class="control-group">
-            <div class="control-label">
-                <label>Vertical Range (°):</label>
-                <button class="lock-toggle" id="lockVertical">🔒</button>
-            </div>
-            <div class="control-input">
-                <input type="range" id="verticalRange" min="1" max="30" step="1" value="5">
-                <input type="number" id="verticalInput" step="1" value="5">
-            </div>
-        </div>
-        <div class="control-group">
-            <div class="control-label">
-                <label>Horizontal Range (°):</label>
-                <button class="lock-toggle" id="lockHorizontal">🔒</button>
-            </div>
-            <div class="control-input">
-                <input type="range" id="horizontalRange" min="10" max="180" step="5" value="30">
-                <input type="number" id="horizontalInput" step="5" value="30">
-            </div>
-        </div>
-        <button id="saveLimitsBtn">Save Limits</button>
-    </div>
     <script type="importmap">
         {
             "imports": {
@@ -510,165 +383,26 @@
                             console.log('Loaded saved camera position');
                         }
                         
-                        // Camera limits configuration - load from localStorage or use defaults
-                        function loadCameraLimits() {
-                            const saved = localStorage.getItem('titleCameraLimits');
-                            if (saved) {
-                                try {
-                                    return JSON.parse(saved);
-                                } catch (e) {
-                                    console.error('Error loading camera limits:', e);
-                                }
-                            }
-                            // Default limits
-                            return {
-                                minDistanceRatio: 0.75,
-                                maxDistanceRatio: 1.4,
-                                verticalRangeDegrees: 5,
-                                horizontalRangeDegrees: 30
-                            };
-                        }
+                        // Set limits on OrbitControls to prevent seeing ugly stuff
+                        // Allow some wiggle room but not too much
+                        controls.minDistance = defaultDistance * 0.75; // Can zoom in to 75% of default
+                        controls.maxDistance = defaultDistance * 1.4; // Can zoom out to 140% of default
                         
-                        function applyCameraLimits(limits, defaultDistance) {
-                            controls.minDistance = defaultDistance * limits.minDistanceRatio;
-                            controls.maxDistance = defaultDistance * limits.maxDistanceRatio;
-                            
-                            const defaultPolarAngle = Math.PI / 2; // Horizontal viewing angle (90° from top)
-                            const verticalRangeRad = limits.verticalRangeDegrees * Math.PI / 180;
-                            controls.minPolarAngle = defaultPolarAngle - verticalRangeRad;
-                            controls.maxPolarAngle = defaultPolarAngle + verticalRangeRad;
-                            
-                            const azimuthRangeRad = limits.horizontalRangeDegrees * Math.PI / 180;
-                            controls.minAzimuthAngle = -azimuthRangeRad / 2;
-                            controls.maxAzimuthAngle = azimuthRangeRad / 2;
-                        }
+                        // Vertical rotation limits (polar angle) - more upward range, less downward range
+                        const defaultPolarAngle = Math.PI / 2; // Horizontal viewing angle (90° from top)
+                        // Allow more upward movement (can tilt camera up more)
+                        const upwardRange = 15 * Math.PI / 180; // 15° above horizontal
+                        // Allow less downward movement (can't tilt camera down as much)
+                        const downwardRange = .5 * Math.PI / 180; // 5° below horizontal
+                        controls.minPolarAngle = defaultPolarAngle - upwardRange; // 75° from top (15° above horizontal)
+                        controls.maxPolarAngle = defaultPolarAngle + downwardRange; // 95° from top (5° below horizontal)
                         
-                        function saveCameraLimits(limits) {
-                            localStorage.setItem('titleCameraLimits', JSON.stringify(limits));
-                            console.log('Camera limits saved!', limits);
-                        }
-                        
-                        // Load and apply camera limits
-                        const cameraLimits = loadCameraLimits();
-                        applyCameraLimits(cameraLimits, defaultDistance);
-                        
-                        // Setup control panel
-                        let locks = {
-                            minDist: true,
-                            maxDist: true,
-                            vertical: true,
-                            horizontal: true
-                        };
-                        
-                        // Load locks from localStorage
-                        const savedLocks = localStorage.getItem('titleCameraLocks');
-                        if (savedLocks) {
-                            try {
-                                locks = JSON.parse(savedLocks);
-                            } catch (e) {}
-                        }
-                        
-                        // Update UI with loaded values
-                        document.getElementById('minDistRange').value = cameraLimits.minDistanceRatio;
-                        document.getElementById('minDistInput').value = cameraLimits.minDistanceRatio;
-                        document.getElementById('maxDistRange').value = cameraLimits.maxDistanceRatio;
-                        document.getElementById('maxDistInput').value = cameraLimits.maxDistanceRatio;
-                        document.getElementById('verticalRange').value = cameraLimits.verticalRangeDegrees;
-                        document.getElementById('verticalInput').value = cameraLimits.verticalRangeDegrees;
-                        document.getElementById('horizontalRange').value = cameraLimits.horizontalRangeDegrees;
-                        document.getElementById('horizontalInput').value = cameraLimits.horizontalRangeDegrees;
-                        
-                        // Update lock buttons
-                        function updateLockButton(id, locked) {
-                            const btn = document.getElementById(id);
-                            if (locked) {
-                                btn.textContent = '🔒';
-                                btn.classList.add('locked');
-                            } else {
-                                btn.textContent = '🔓';
-                                btn.classList.remove('locked');
-                            }
-                        }
-                        
-                        updateLockButton('lockMinDist', locks.minDist);
-                        updateLockButton('lockMaxDist', locks.maxDist);
-                        updateLockButton('lockVertical', locks.vertical);
-                        updateLockButton('lockHorizontal', locks.horizontal);
-                        
-                        // Sync range and input values
-                        function syncInputRange(rangeId, inputId, lockKey) {
-                            const range = document.getElementById(rangeId);
-                            const input = document.getElementById(inputId);
-                            range.addEventListener('input', () => {
-                                input.value = range.value;
-                                if (!locks[lockKey]) {
-                                    updateLimits();
-                                }
-                            });
-                            input.addEventListener('input', () => {
-                                const val = parseFloat(input.value);
-                                if (!isNaN(val)) {
-                                    const min = parseFloat(range.min);
-                                    const max = parseFloat(range.max);
-                                    range.value = Math.max(min, Math.min(max, val));
-                                    input.value = range.value;
-                                    if (!locks[lockKey]) {
-                                        updateLimits();
-                                    }
-                                }
-                            });
-                        }
-                        
-                        syncInputRange('minDistRange', 'minDistInput', 'minDist');
-                        syncInputRange('maxDistRange', 'maxDistInput', 'maxDist');
-                        syncInputRange('verticalRange', 'verticalInput', 'vertical');
-                        syncInputRange('horizontalRange', 'horizontalInput', 'horizontal');
-                        
-                        // Toggle locks
-                        document.getElementById('lockMinDist').addEventListener('click', () => {
-                            locks.minDist = !locks.minDist;
-                            updateLockButton('lockMinDist', locks.minDist);
-                            localStorage.setItem('titleCameraLocks', JSON.stringify(locks));
-                        });
-                        document.getElementById('lockMaxDist').addEventListener('click', () => {
-                            locks.maxDist = !locks.maxDist;
-                            updateLockButton('lockMaxDist', locks.maxDist);
-                            localStorage.setItem('titleCameraLocks', JSON.stringify(locks));
-                        });
-                        document.getElementById('lockVertical').addEventListener('click', () => {
-                            locks.vertical = !locks.vertical;
-                            updateLockButton('lockVertical', locks.vertical);
-                            localStorage.setItem('titleCameraLocks', JSON.stringify(locks));
-                        });
-                        document.getElementById('lockHorizontal').addEventListener('click', () => {
-                            locks.horizontal = !locks.horizontal;
-                            updateLockButton('lockHorizontal', locks.horizontal);
-                            localStorage.setItem('titleCameraLocks', JSON.stringify(locks));
-                        });
-                        
-                        // Update limits function
-                        function updateLimits() {
-                            const newLimits = {
-                                minDistanceRatio: parseFloat(document.getElementById('minDistInput').value),
-                                maxDistanceRatio: parseFloat(document.getElementById('maxDistInput').value),
-                                verticalRangeDegrees: parseFloat(document.getElementById('verticalInput').value),
-                                horizontalRangeDegrees: parseFloat(document.getElementById('horizontalInput').value)
-                            };
-                            applyCameraLimits(newLimits, defaultDistance);
-                        }
-                        
-                        // Save button
-                        document.getElementById('saveLimitsBtn').addEventListener('click', () => {
-                            const newLimits = {
-                                minDistanceRatio: parseFloat(document.getElementById('minDistInput').value),
-                                maxDistanceRatio: parseFloat(document.getElementById('maxDistInput').value),
-                                verticalRangeDegrees: parseFloat(document.getElementById('verticalInput').value),
-                                horizontalRangeDegrees: parseFloat(document.getElementById('horizontalInput').value)
-                            };
-                            saveCameraLimits(newLimits);
-                            applyCameraLimits(newLimits, defaultDistance);
-                            alert('Limits saved!');
-                        });
+                        // Restrict horizontal rotation (azimuth angle) - limited left/right movement  
+                        // Use a fixed center azimuth of 0 (looking down -Z axis) with ±30° range
+                        // This ensures camera starts in front and can wiggle left/right
+                        const azimuthRange = Math.PI / 6; // ±30 degrees (60° total range)
+                        controls.minAzimuthAngle = -azimuthRange; // 30° to the left
+                        controls.maxAzimuthAngle = azimuthRange;  // 30° to the right
                         
                         // Create pixel-style text "Happy Birthday, Dragon!"
                         function createPixelText(text) {
